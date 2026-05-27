@@ -1,0 +1,1198 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>משמרות MDA</title>
+<meta name="theme-color" content="#0a0e14">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="משמרות MDA">
+<link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" href="icon.png">
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Heebo:wght@300;400;500;600;700;800;900&display=swap');
+
+:root {
+  --bg:        #0a0e14;
+  --surface:   #111620;
+  --surface2:  #181e2a;
+  --surface3:  #1e2535;
+  --border:    #252d3d;
+  --border2:   #2e3848;
+  --sun:       #f59e0b;
+  --sun-dim:   #2d1f06;
+  --star:      #3b82f6;
+  --star-dim:  #0b1830;
+  --moon:      #8b5cf6;
+  --moon-dim:  #170f2e;
+  --red:       #ef4444;
+  --green:     #22c55e;
+  --green-dim: #0a2015;
+  --text:      #e2e8f0;
+  --text-dim:  #64748b;
+  --text-muted:#374151;
+  --nav-h:     60px;
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+
+html, body {
+  font-family: 'Heebo', sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  height: 100%;
+  overflow: hidden;
+}
+
+/* ══════════════════════════════════
+   LAYOUT
+══════════════════════════════════ */
+.app { display: flex; flex-direction: column; height: 100dvh; }
+
+.screen {
+  display: none;
+  flex: 1;
+  overflow-y: auto;
+  overflow-x: hidden;
+  padding-bottom: calc(var(--nav-h) + 8px);
+}
+.screen.active { display: block; }
+
+/* ══════════════════════════════════
+   TOP BAR
+══════════════════════════════════ */
+.topbar {
+  background: var(--surface);
+  border-bottom: 1px solid var(--border);
+  padding: 0 16px;
+  height: 52px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-shrink: 0;
+  position: relative;
+  z-index: 10;
+}
+.topbar-logo {
+  display: flex; align-items: center; gap: 8px;
+  font-size: 16px; font-weight: 800; letter-spacing: 0.3px;
+}
+.logo-dot { color: var(--red); font-size: 20px; }
+
+.month-nav { display: flex; align-items: center; gap: 4px; }
+.btn-nav {
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  color: var(--text);
+  width: 30px; height: 30px;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 15px;
+  display: flex; align-items: center; justify-content: center;
+  transition: background 0.12s;
+  user-select: none;
+}
+.btn-nav:active { background: var(--border); }
+#month-label {
+  font-size: 14px; font-weight: 700;
+  min-width: 88px; text-align: center;
+}
+
+/* ══════════════════════════════════
+   BOTTOM NAV
+══════════════════════════════════ */
+.bottom-nav {
+  height: var(--nav-h);
+  background: var(--surface);
+  border-top: 1px solid var(--border);
+  display: flex;
+  flex-shrink: 0;
+  position: relative;
+  z-index: 10;
+}
+.nav-btn {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 3px;
+  background: none;
+  border: none;
+  color: var(--text-dim);
+  cursor: pointer;
+  font-family: 'Heebo', sans-serif;
+  font-size: 10px;
+  font-weight: 600;
+  transition: color 0.15s;
+  padding: 6px 0;
+  position: relative;
+}
+.nav-btn .nav-icon { font-size: 20px; line-height: 1; }
+.nav-btn.active { color: var(--text); }
+.nav-btn.active::after {
+  content: '';
+  position: absolute;
+  top: 0; left: 20%; right: 20%;
+  height: 2px;
+  background: var(--star);
+  border-radius: 0 0 2px 2px;
+}
+
+/* ══════════════════════════════════
+   SCREEN: CALENDAR
+══════════════════════════════════ */
+
+/* Shift type selector */
+.shift-selector {
+  display: flex;
+  gap: 6px;
+  padding: 10px 12px;
+  background: var(--surface);
+  border-bottom: 1px solid var(--border);
+}
+.btn-type {
+  flex: 1;
+  display: flex; align-items: center; justify-content: center; gap: 5px;
+  padding: 8px 4px;
+  border-radius: 10px;
+  border: 1.5px solid var(--border2);
+  background: var(--surface2);
+  color: var(--text-dim);
+  cursor: pointer;
+  font-family: 'Heebo', sans-serif;
+  font-size: 13px; font-weight: 700;
+  transition: all 0.14s;
+  user-select: none;
+}
+.btn-type.sel-sun  { border-color: var(--sun);  color: var(--sun);  background: var(--sun-dim); }
+.btn-type.sel-star { border-color: var(--star); color: var(--star); background: var(--star-dim); }
+.btn-type.sel-moon { border-color: var(--moon); color: var(--moon); background: var(--moon-dim); }
+.type-icon { width: 18px; height: 18px; }
+
+/* Calendar grid */
+.cal-wrap { padding: 10px 10px 0; }
+.cal-headers {
+  display: grid; grid-template-columns: repeat(7, 1fr);
+  gap: 2px; margin-bottom: 3px;
+}
+.cal-header {
+  text-align: center; font-size: 10px; font-weight: 700;
+  color: var(--text-muted); padding: 3px 0; letter-spacing: 0.5px;
+}
+.cal-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 2px; }
+
+.day-cell {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  min-height: 50px;
+  padding: 4px 3px;
+  cursor: pointer;
+  display: flex; flex-direction: column; align-items: center;
+  transition: background 0.1s;
+  position: relative;
+  user-select: none;
+}
+.day-cell:active { background: var(--surface2); }
+.day-cell.empty  { background: transparent; border-color: transparent; cursor: default; }
+.day-cell.today  { border-color: var(--green); }
+
+.day-num {
+  font-size: 11px; font-weight: 700; color: var(--green);
+  line-height: 1; margin-bottom: 2px; align-self: flex-start;
+}
+.day-icons {
+  display: flex; flex-direction: column; align-items: center;
+  gap: 1px; flex: 1; justify-content: center;
+}
+.shift-dot { width: 18px; height: 18px; }
+
+/* Summary strip */
+.summary-strip {
+  margin: 10px 10px 0;
+  background: var(--green-dim);
+  border: 1px solid var(--green);
+  border-radius: 12px;
+  padding: 10px 14px;
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: 4px;
+}
+.sum-item { text-align: center; }
+.sum-val   { font-size: 18px; font-weight: 900; color: var(--green); }
+.sum-label { font-size: 10px; color: var(--text-dim); margin-top: 1px; }
+
+/* Shift type breakdown */
+.type-strip {
+  margin: 8px 10px 0;
+  display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 6px;
+}
+.type-card {
+  border-radius: 10px;
+  padding: 8px 6px;
+  text-align: center;
+  border: 1px solid;
+}
+.type-card.sun  { background: var(--sun-dim);  border-color: var(--sun);  color: var(--sun); }
+.type-card.star { background: var(--star-dim); border-color: var(--star); color: var(--star); }
+.type-card.moon { background: var(--moon-dim); border-color: var(--moon); color: var(--moon); }
+.type-card-num   { font-size: 20px; font-weight: 900; }
+.type-card-label { font-size: 10px; margin-top: 2px; opacity: 0.8; }
+
+/* ══════════════════════════════════
+   SCREEN: SHIFTS LIST
+══════════════════════════════════ */
+.list-section {
+  margin: 10px 12px 0;
+}
+.list-section-title {
+  font-size: 11px; font-weight: 700; color: var(--text-muted);
+  letter-spacing: 0.8px; text-transform: uppercase;
+  padding: 0 2px 6px;
+}
+
+.shift-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 10px 12px;
+  margin-bottom: 6px;
+  display: flex; align-items: center; gap: 10px;
+}
+.shift-card-icon { width: 32px; height: 32px; flex-shrink: 0; }
+.shift-card-info { flex: 1; }
+.shift-card-title { font-size: 13px; font-weight: 700; }
+.shift-card-time  { font-size: 11px; color: var(--text-dim); margin-top: 2px; }
+.shift-card.sun  { border-right: 3px solid var(--sun); }
+.shift-card.star { border-right: 3px solid var(--star); }
+.shift-card.moon { border-right: 3px solid var(--moon); }
+
+.btn-del {
+  background: none; border: none;
+  color: var(--text-muted); cursor: pointer;
+  font-size: 18px; padding: 4px;
+  transition: color 0.12s; flex-shrink: 0;
+}
+.btn-del:active { color: var(--red); }
+
+.empty-state {
+  text-align: center; padding: 40px 20px;
+  color: var(--text-muted); font-size: 13px;
+}
+.empty-state .es-icon { font-size: 36px; margin-bottom: 8px; }
+
+/* Import from chat */
+.import-box {
+  margin: 10px 12px 0;
+  background: var(--surface2);
+  border: 1px solid var(--border2);
+  border-radius: 12px;
+  overflow: hidden;
+}
+.import-header {
+  padding: 10px 14px;
+  display: flex; align-items: center; justify-content: space-between;
+  cursor: pointer; user-select: none;
+  background: var(--surface3);
+  border-bottom: 1px solid var(--border);
+}
+.import-header span { font-size: 13px; font-weight: 700; color: var(--star); }
+.import-toggle { color: var(--text-dim); font-size: 16px; transition: transform 0.2s; }
+.import-toggle.open { transform: rotate(180deg); }
+.import-body { display: none; padding: 12px; }
+.import-body.open { display: block; }
+
+.import-textarea {
+  width: 100%;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  color: var(--text);
+  font-family: monospace;
+  font-size: 11px;
+  padding: 10px;
+  outline: none;
+  resize: none;
+  height: 64px;
+  direction: ltr;
+  margin-bottom: 8px;
+}
+.import-textarea:focus { border-color: var(--star); }
+.import-hint { font-size: 10px; color: var(--text-muted); margin-bottom: 8px; line-height: 1.5; }
+.import-actions { display: flex; gap: 6px; }
+.btn-import {
+  flex: 1; background: var(--star); border: none; color: #fff;
+  border-radius: 8px; padding: 10px; cursor: pointer;
+  font-family: 'Heebo', sans-serif; font-size: 13px; font-weight: 700;
+  transition: opacity 0.15s;
+}
+.btn-import:active { opacity: 0.8; }
+.import-status { font-size: 11px; margin-top: 6px; min-height: 16px; }
+.import-status.ok  { color: var(--green); }
+.import-status.err { color: var(--red); }
+
+/* Export row */
+.action-row {
+  margin: 8px 12px 0;
+  display: flex; gap: 6px;
+}
+.btn-action {
+  flex: 1;
+  background: var(--surface2);
+  border: 1px solid var(--border2);
+  color: var(--text);
+  border-radius: 10px;
+  padding: 11px 6px;
+  cursor: pointer;
+  font-family: 'Heebo', sans-serif;
+  font-size: 12px; font-weight: 600;
+  text-align: center;
+  transition: background 0.12s;
+  line-height: 1.4;
+}
+.btn-action:active { background: var(--border); }
+.btn-action.accent { background: var(--green-dim); border-color: var(--green); color: var(--green); }
+
+/* ══════════════════════════════════
+   SCREEN: SETTINGS
+══════════════════════════════════ */
+.settings-group {
+  margin: 10px 12px 0;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  overflow: hidden;
+}
+.settings-group-title {
+  background: var(--surface2);
+  padding: 9px 14px;
+  font-size: 11px; font-weight: 700;
+  color: var(--text-muted); letter-spacing: 0.8px; text-transform: uppercase;
+  border-bottom: 1px solid var(--border);
+}
+.settings-row {
+  padding: 12px 14px;
+  border-bottom: 1px solid var(--border);
+}
+.settings-row:last-child { border-bottom: none; }
+.settings-label {
+  font-size: 13px; font-weight: 600; margin-bottom: 4px; display: block;
+}
+.settings-hint {
+  font-size: 11px; color: var(--text-muted); margin-bottom: 8px; line-height: 1.5;
+}
+.settings-hint a { color: var(--star); text-decoration: none; }
+.settings-input-row { display: flex; gap: 6px; }
+.settings-input {
+  flex: 1;
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  color: var(--text);
+  font-family: monospace; font-size: 12px;
+  padding: 9px 10px; outline: none;
+  direction: ltr;
+  transition: border-color 0.15s;
+}
+.settings-input:focus { border-color: var(--star); }
+.settings-input.saved { border-color: var(--green); }
+.settings-input.num {
+  font-family: 'Heebo', sans-serif;
+  font-size: 14px; font-weight: 700;
+  text-align: center; direction: rtl;
+  width: 100%;
+}
+.btn-save {
+  background: var(--surface2); border: 1px solid var(--border2);
+  color: var(--text); border-radius: 8px; padding: 9px 14px;
+  cursor: pointer; font-family: 'Heebo', sans-serif;
+  font-size: 13px; font-weight: 600; white-space: nowrap;
+  transition: background 0.12s;
+}
+.btn-save:active { background: var(--border); }
+.settings-status {
+  font-size: 11px; margin-top: 5px; min-height: 16px;
+}
+.settings-status.ok  { color: var(--green); }
+.settings-status.err { color: var(--red); }
+
+.provider-tabs { display: flex; gap: 6px; margin-bottom: 10px; }
+.btn-tab {
+  flex: 1; padding: 7px 6px; border-radius: 8px;
+  border: 1.5px solid var(--border2);
+  background: var(--surface2); color: var(--text-dim);
+  cursor: pointer; font-family: 'Heebo', sans-serif;
+  font-size: 12px; font-weight: 700; transition: all 0.13s;
+}
+.btn-tab.active { border-color: var(--moon); color: var(--moon); background: var(--moon-dim); }
+
+.btn-danger {
+  width: 100%; padding: 11px; border-radius: 8px;
+  background: none; border: 1px solid var(--red);
+  color: var(--red); cursor: pointer;
+  font-family: 'Heebo', sans-serif; font-size: 13px; font-weight: 700;
+  transition: background 0.12s;
+}
+.btn-danger:active { background: #2d0a0a; }
+
+/* ══════════════════════════════════
+   GCAL SYNC (in settings)
+══════════════════════════════════ */
+.sync-actions { display: flex; gap: 6px; margin-top: 10px; }
+.btn-sync {
+  flex: 1; background: var(--star); border: none; color: #fff;
+  border-radius: 8px; padding: 10px 6px; cursor: pointer;
+  font-family: 'Heebo', sans-serif; font-size: 12px; font-weight: 700;
+  transition: opacity 0.15s; text-align: center;
+  display: flex; align-items: center; justify-content: center; gap: 4px;
+}
+.btn-sync:active { opacity: 0.8; }
+.btn-sync:disabled { opacity: 0.4; cursor: not-allowed; }
+.btn-sync.danger-sync {
+  background: none; border: 1px solid var(--red); color: var(--red);
+}
+
+/* TOAST */
+.toast {
+  position: fixed; bottom: calc(var(--nav-h) + 12px); left: 50%;
+  transform: translateX(-50%) translateY(20px);
+  background: var(--surface3); border: 1px solid var(--border2);
+  color: var(--text); padding: 9px 18px; border-radius: 20px;
+  font-size: 13px; font-weight: 500;
+  opacity: 0; transition: all 0.22s; z-index: 999; white-space: nowrap;
+  pointer-events: none;
+}
+.toast.show { transform: translateX(-50%) translateY(0); opacity: 1; }
+
+@keyframes spin { to { transform: rotate(360deg); } }
+.spinner {
+  width: 13px; height: 13px;
+  border: 2px solid rgba(255,255,255,0.3); border-top-color: #fff;
+  border-radius: 50%; animation: spin 0.7s linear infinite; display: inline-block;
+}
+</style>
+</head>
+<body>
+<div class="app">
+
+<!-- TOP BAR -->
+<div class="topbar">
+  <div class="topbar-logo">
+    <span class="logo-dot">✦</span> MDA
+  </div>
+  <div class="month-nav" id="month-nav">
+    <button class="btn-nav" id="btn-prev">›</button>
+    <span id="month-label"></span>
+    <button class="btn-nav" id="btn-next">‹</button>
+  </div>
+</div>
+
+<!-- ══════════════════════════════
+     SCREEN 1: CALENDAR
+══════════════════════════════ -->
+<div class="screen active" id="screen-cal">
+
+  <!-- shift type selector -->
+  <div class="shift-selector">
+    <button class="btn-type sel-sun" id="type-sun" onclick="selectType('sun')">
+      <svg class="type-icon" viewBox="0 0 24 24" fill="none">
+        <circle cx="12" cy="12" r="4.5" stroke="currentColor" stroke-width="2"/>
+        <line x1="12" y1="2" x2="12" y2="5.5" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+        <line x1="12" y1="18.5" x2="12" y2="22" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+        <line x1="2" y1="12" x2="5.5" y2="12" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+        <line x1="18.5" y1="12" x2="22" y2="12" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+        <line x1="4.93" y1="4.93" x2="7.4" y2="7.4" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+        <line x1="16.6" y1="16.6" x2="19.07" y2="19.07" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+        <line x1="4.93" y1="19.07" x2="7.4" y2="16.6" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+        <line x1="16.6" y1="7.4" x2="19.07" y2="4.93" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+      </svg>
+      בוקר
+    </button>
+    <button class="btn-type" id="type-star" onclick="selectType('star')">
+      <svg class="type-icon" viewBox="0 0 24 24" fill="none">
+        <polygon points="12,2 15.09,8.26 22,9.27 17,14.14 18.18,21.02 12,17.77 5.82,21.02 7,14.14 2,9.27 8.91,8.26"
+          stroke="currentColor" stroke-width="2" stroke-linejoin="round"/>
+      </svg>
+      ערב
+    </button>
+    <button class="btn-type" id="type-moon" onclick="selectType('moon')">
+      <svg class="type-icon" viewBox="0 0 24 24" fill="none">
+        <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"
+          stroke="currentColor" stroke-width="2" stroke-linejoin="round"/>
+      </svg>
+      לילה
+    </button>
+  </div>
+
+  <!-- calendar -->
+  <div class="cal-wrap">
+    <div class="cal-headers">
+      <div class="cal-header">א׳</div>
+      <div class="cal-header">ב׳</div>
+      <div class="cal-header">ג׳</div>
+      <div class="cal-header">ד׳</div>
+      <div class="cal-header">ה׳</div>
+      <div class="cal-header">ו׳</div>
+      <div class="cal-header">ש׳</div>
+    </div>
+    <div class="cal-grid" id="cal-grid"></div>
+  </div>
+
+  <!-- summary -->
+  <div class="summary-strip" id="summary-strip">
+    <div class="sum-item">
+      <div class="sum-val" id="sum-hours">0</div>
+      <div class="sum-label">שעות</div>
+    </div>
+    <div class="sum-item">
+      <div class="sum-val" id="sum-shifts">0</div>
+      <div class="sum-label">משמרות</div>
+    </div>
+    <div class="sum-item">
+      <div class="sum-val" id="sum-salary">₪0</div>
+      <div class="sum-label">שכר גולמי</div>
+    </div>
+  </div>
+
+  <!-- type breakdown -->
+  <div class="type-strip">
+    <div class="type-card sun">
+      <div class="type-card-num" id="cnt-sun">0</div>
+      <div class="type-card-label">בוקר</div>
+    </div>
+    <div class="type-card star">
+      <div class="type-card-num" id="cnt-star">0</div>
+      <div class="type-card-label">ערב</div>
+    </div>
+    <div class="type-card moon">
+      <div class="type-card-num" id="cnt-moon">0</div>
+      <div class="type-card-label">לילה</div>
+    </div>
+  </div>
+
+</div><!-- /screen-cal -->
+
+<!-- ══════════════════════════════
+     SCREEN 2: SHIFTS LIST
+══════════════════════════════ -->
+<div class="screen" id="screen-list">
+
+  <!-- import from chat -->
+  <div class="import-box">
+    <div class="import-header" onclick="toggleImport()">
+      <span>📋 ייבוא מהצ׳אט</span>
+      <span class="import-toggle" id="import-toggle">▾</span>
+    </div>
+    <div class="import-body" id="import-body">
+      <div class="import-hint">העלה תמונה של הסידור לצ׳אט עם Claude → קבל קוד → הדבק כאן.</div>
+      <textarea class="import-textarea" id="paste-input"
+        placeholder="2026-06-01:star,2026-06-03:moon,..."></textarea>
+      <div class="import-actions">
+        <button class="btn-import" onclick="importFromPaste()">✅ ייבא</button>
+        <button class="btn-action" style="flex:0;padding:10px 14px;" onclick="document.getElementById('paste-input').value=''">נקה</button>
+      </div>
+      <div class="import-status" id="import-status"></div>
+    </div>
+  </div>
+
+  <!-- export actions -->
+  <div class="action-row">
+    <button class="btn-action accent" onclick="exportIcal()">📥 ייצוא .ics</button>
+    <button class="btn-action" id="btn-sync-month" onclick="syncMonth()">🔄 סנכרן גוגל</button>
+  </div>
+
+  <!-- list -->
+  <div class="list-section">
+    <div class="list-section-title" id="list-title">משמרות חודש נוכחי</div>
+    <div id="shifts-list"></div>
+  </div>
+
+</div><!-- /screen-list -->
+
+<!-- ══════════════════════════════
+     SCREEN 3: SETTINGS
+══════════════════════════════ -->
+<div class="screen" id="screen-settings">
+
+  <!-- AI scan -->
+  <div class="settings-group">
+    <div class="settings-group-title">📷 סריקת סידור — AI</div>
+    <div class="settings-row">
+      <span class="settings-label">ספק AI</span>
+      <div class="provider-tabs">
+        <button class="btn-tab active" id="tab-gemini" onclick="selectAiProvider('gemini')">Gemini (חינמי)</button>
+        <button class="btn-tab" id="tab-anthropic" onclick="selectAiProvider('anthropic')">Claude</button>
+      </div>
+      <div id="ai-key-section-gemini">
+        <div class="settings-hint">
+          חינמי (צריך billing מופעל) ·
+          <a href="https://aistudio.google.com/apikey" target="_blank">aistudio.google.com/apikey</a>
+        </div>
+        <div class="settings-input-row">
+          <input type="password" class="settings-input" id="key-gemini" placeholder="AIza..." dir="ltr">
+          <button class="btn-save" onclick="saveAiKey('gemini')">שמור</button>
+        </div>
+        <div class="settings-status" id="status-gemini"></div>
+      </div>
+      <div id="ai-key-section-anthropic" style="display:none;">
+        <div class="settings-hint">
+          ~$0.01 לסריקה · מינימום $5 ·
+          <a href="https://console.anthropic.com" target="_blank">console.anthropic.com</a>
+        </div>
+        <div class="settings-input-row">
+          <input type="password" class="settings-input" id="key-anthropic" placeholder="sk-ant-..." dir="ltr">
+          <button class="btn-save" onclick="saveAiKey('anthropic')">שמור</button>
+        </div>
+        <div class="settings-status" id="status-anthropic"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Google Calendar -->
+  <div class="settings-group">
+    <div class="settings-group-title">🔄 גוגל קלנדר</div>
+    <div class="settings-row">
+      <span class="settings-label">Apps Script URL</span>
+      <div class="settings-hint">
+        הפעל ב־<a href="https://script.google.com" target="_blank">script.google.com</a>
+        עם קובץ MDA_CalendarSync.gs → Deploy → העתק URL.
+      </div>
+      <div class="settings-input-row">
+        <input type="text" class="settings-input" id="gcal-url" placeholder="https://script.google.com/macros/s/..." dir="ltr">
+        <button class="btn-save" onclick="saveGcalUrl()">שמור</button>
+      </div>
+      <div class="settings-status" id="status-gcal"></div>
+      <div class="sync-actions">
+        <button class="btn-sync" id="btn-sync-all" onclick="syncAll()">🔄 סנכרן הכל</button>
+        <button class="btn-sync danger-sync" onclick="clearMonthGcal()">🗑️ נקה חודש</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Salary -->
+  <div class="settings-group">
+    <div class="settings-group-title">💰 שכר</div>
+    <div class="settings-row">
+      <span class="settings-label">שכר בסיס לשעה (₪)</span>
+      <input type="number" class="settings-input num" id="rate-base" value="35" min="1" onchange="saveRates()">
+    </div>
+    <div class="settings-row">
+      <span class="settings-label" style="color:var(--sun)">☀️ תוספת בוקר (%)</span>
+      <input type="number" class="settings-input num" id="rate-sun" value="100" min="0" onchange="saveRates()">
+    </div>
+    <div class="settings-row">
+      <span class="settings-label" style="color:var(--star)">⭐ תוספת ערב (%)</span>
+      <input type="number" class="settings-input num" id="rate-star" value="100" min="0" onchange="saveRates()">
+    </div>
+    <div class="settings-row">
+      <span class="settings-label" style="color:var(--moon)">🌙 תוספת לילה (%)</span>
+      <input type="number" class="settings-input num" id="rate-moon" value="150" min="0" onchange="saveRates()">
+    </div>
+  </div>
+
+  <!-- Data -->
+  <div class="settings-group">
+    <div class="settings-group-title">🗄️ נתונים</div>
+    <div class="settings-row">
+      <div style="display:flex;gap:8px;">
+        <button class="btn-action accent" style="flex:1;" onclick="exportBackup()">📤 ייצוא גיבוי</button>
+        <button class="btn-action" style="flex:1;" onclick="document.getElementById('import-file').click()">📥 ייבוא גיבוי</button>
+        <input type="file" id="import-file" accept=".json" style="display:none" onchange="importBackup(event)">
+      </div>
+    </div>
+    <div class="settings-row">
+      <button class="btn-danger" onclick="fullReset()">⚠️ איפוס מלא</button>
+    </div>
+  </div>
+
+  <div style="height:10px;"></div>
+</div><!-- /screen-settings -->
+
+<!-- BOTTOM NAV -->
+<div class="bottom-nav">
+  <button class="nav-btn active" id="nav-cal" onclick="goScreen('cal')">
+    <span class="nav-icon">🗓</span>
+    <span>חודש</span>
+  </button>
+  <button class="nav-btn" id="nav-list" onclick="goScreen('list')">
+    <span class="nav-icon">📋</span>
+    <span>משמרות</span>
+  </button>
+  <button class="nav-btn" id="nav-settings" onclick="goScreen('settings')">
+    <span class="nav-icon">⚙️</span>
+    <span>הגדרות</span>
+  </button>
+</div>
+
+</div><!-- /app -->
+<div class="toast" id="toast"></div>
+
+<script>
+// ══════════════════════════════════════════════════════
+// DATA
+// ══════════════════════════════════════════════════════
+const HEB_MONTHS = ['ינואר','פברואר','מרץ','אפריל','מאי','יוני',
+                    'יולי','אוגוסט','ספטמבר','אוקטובר','נובמבר','דצמבר'];
+const NAMES  = { sun:'בוקר', star:'ערב', moon:'לילה' };
+const TIMES  = { sun:{s:7,e:15}, star:{s:15,e:23}, moon:{s:23,e:7} };
+const COLORS = { sun:'var(--sun)', star:'var(--star)', moon:'var(--moon)' };
+
+let curYear  = new Date().getFullYear();
+let curMonth = new Date().getMonth();
+let selType  = 'sun';
+let shifts   = {};
+let rates    = { base:35, sun:100, star:100, moon:150 };
+let scriptUrl = '';
+let aiProvider = 'gemini';
+
+// SVG icons
+const SVG = {
+  sun: (color) => `<svg viewBox="0 0 24 24" fill="none" style="color:${color}">
+    <circle cx="12" cy="12" r="4.5" stroke="currentColor" stroke-width="2"/>
+    <line x1="12" y1="2" x2="12" y2="5.5" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+    <line x1="12" y1="18.5" x2="12" y2="22" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+    <line x1="2" y1="12" x2="5.5" y2="12" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+    <line x1="18.5" y1="12" x2="22" y2="12" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+    <line x1="4.93" y1="4.93" x2="7.4" y2="7.4" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+    <line x1="16.6" y1="16.6" x2="19.07" y2="19.07" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+    <line x1="4.93" y1="19.07" x2="7.4" y2="16.6" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+    <line x1="16.6" y1="7.4" x2="19.07" y2="4.93" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+  </svg>`,
+  star: (color) => `<svg viewBox="0 0 24 24" fill="none" style="color:${color}">
+    <polygon points="12,2 15.09,8.26 22,9.27 17,14.14 18.18,21.02 12,17.77 5.82,21.02 7,14.14 2,9.27 8.91,8.26"
+      stroke="currentColor" stroke-width="2" stroke-linejoin="round"/>
+  </svg>`,
+  moon: (color) => `<svg viewBox="0 0 24 24" fill="none" style="color:${color}">
+    <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"
+      stroke="currentColor" stroke-width="2" stroke-linejoin="round"/>
+  </svg>`
+};
+
+// ══════════════════════════════════════════════════════
+// PERSIST
+// ══════════════════════════════════════════════════════
+function load() {
+  const s = localStorage.getItem('mda_shifts'); if (s) shifts = JSON.parse(s);
+  const r = localStorage.getItem('mda_rates');  if (r) rates  = JSON.parse(r);
+  const u = localStorage.getItem('mda_script_url'); if (u) scriptUrl = u;
+  const p = localStorage.getItem('mda_ai_provider'); if (p) aiProvider = p;
+
+  document.getElementById('rate-base').value = rates.base;
+  document.getElementById('rate-sun').value  = rates.sun;
+  document.getElementById('rate-star').value = rates.star;
+  document.getElementById('rate-moon').value = rates.moon;
+  if (u) { document.getElementById('gcal-url').value = u; document.getElementById('gcal-url').classList.add('saved'); }
+
+  const gk = localStorage.getItem('mda_key_gemini');
+  const ak = localStorage.getItem('mda_key_anthropic');
+  if (gk) { document.getElementById('key-gemini').value = gk; document.getElementById('key-gemini').classList.add('saved'); }
+  if (ak) { document.getElementById('key-anthropic').value = ak; document.getElementById('key-anthropic').classList.add('saved'); }
+  selectAiProvider(aiProvider);
+}
+
+function saveShifts() { localStorage.setItem('mda_shifts', JSON.stringify(shifts)); }
+function saveRates() {
+  rates.base = parseFloat(document.getElementById('rate-base').value) || 35;
+  rates.sun  = parseFloat(document.getElementById('rate-sun').value)  || 100;
+  rates.star = parseFloat(document.getElementById('rate-star').value) || 100;
+  rates.moon = parseFloat(document.getElementById('rate-moon').value) || 150;
+  localStorage.setItem('mda_rates', JSON.stringify(rates));
+  renderSummary();
+}
+
+// ══════════════════════════════════════════════════════
+// NAVIGATION
+// ══════════════════════════════════════════════════════
+function goScreen(name) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById('screen-' + name).classList.add('active');
+  document.getElementById('nav-' + name).classList.add('active');
+  // show/hide month nav
+  document.getElementById('month-nav').style.display = name === 'settings' ? 'none' : 'flex';
+  if (name === 'list') renderList();
+}
+
+document.getElementById('btn-prev').onclick = () => {
+  curMonth--; if (curMonth < 0) { curMonth = 11; curYear--; }
+  renderCal();
+};
+document.getElementById('btn-next').onclick = () => {
+  curMonth++; if (curMonth > 11) { curMonth = 0; curYear++; }
+  renderCal();
+};
+
+// ══════════════════════════════════════════════════════
+// TYPE SELECTOR
+// ══════════════════════════════════════════════════════
+function selectType(t) {
+  selType = t;
+  ['sun','star','moon'].forEach(id => {
+    const btn = document.getElementById('type-' + id);
+    btn.className = 'btn-type' + (id === t ? ' sel-' + id : '');
+  });
+}
+selectType('sun');
+
+// ══════════════════════════════════════════════════════
+// CALENDAR RENDER
+// ══════════════════════════════════════════════════════
+function dateKey(y, m, d) {
+  return y + '-' + String(m+1).padStart(2,'0') + '-' + String(d).padStart(2,'0');
+}
+
+function toggleDay(y, m, d) {
+  const key = dateKey(y, m, d);
+  if (!shifts[key]) shifts[key] = [];
+  const idx = shifts[key].indexOf(selType);
+  if (idx === -1) shifts[key].push(selType);
+  else { shifts[key].splice(idx, 1); if (!shifts[key].length) delete shifts[key]; }
+  saveShifts(); renderCal();
+}
+
+function renderCal() {
+  document.getElementById('month-label').textContent = HEB_MONTHS[curMonth] + ' ' + curYear;
+  const grid    = document.getElementById('cal-grid');
+  grid.innerHTML = '';
+  const today    = new Date();
+  const firstDay = new Date(curYear, curMonth, 1).getDay();
+  const days     = new Date(curYear, curMonth + 1, 0).getDate();
+
+  for (let i = 0; i < firstDay; i++) {
+    const e = document.createElement('div'); e.className = 'day-cell empty'; grid.appendChild(e);
+  }
+  for (let d = 1; d <= days; d++) {
+    const key  = dateKey(curYear, curMonth, d);
+    const cell = document.createElement('div');
+    cell.className = 'day-cell';
+    if (today.getFullYear()===curYear && today.getMonth()===curMonth && today.getDate()===d)
+      cell.classList.add('today');
+
+    const num = document.createElement('div');
+    num.className = 'day-num'; num.textContent = d; cell.appendChild(num);
+
+    if (shifts[key]?.length) {
+      const wrap = document.createElement('div'); wrap.className = 'day-icons';
+      shifts[key].forEach(t => {
+        const ic = document.createElement('div');
+        ic.className = 'shift-dot'; ic.innerHTML = SVG[t](COLORS[t]); wrap.appendChild(ic);
+      });
+      cell.appendChild(wrap);
+    }
+
+    cell.onclick = () => toggleDay(curYear, curMonth, d);
+    grid.appendChild(cell);
+  }
+  renderSummary();
+}
+
+function renderSummary() {
+  const prefix = curYear + '-' + String(curMonth+1).padStart(2,'0') + '-';
+  let hours=0, total=0, salary=0, cnts={sun:0,star:0,moon:0};
+  Object.keys(shifts).forEach(k => {
+    if (!k.startsWith(prefix)) return;
+    shifts[k].forEach(t => {
+      total++; hours += 8; salary += (rates.base * rates[t]/100) * 8; cnts[t]++;
+    });
+  });
+  document.getElementById('sum-hours').textContent  = hours;
+  document.getElementById('sum-shifts').textContent = total;
+  document.getElementById('sum-salary').textContent = '₪' + Math.round(salary).toLocaleString('he-IL');
+  document.getElementById('cnt-sun').textContent  = cnts.sun;
+  document.getElementById('cnt-star').textContent = cnts.star;
+  document.getElementById('cnt-moon').textContent = cnts.moon;
+}
+
+// ══════════════════════════════════════════════════════
+// SHIFTS LIST
+// ══════════════════════════════════════════════════════
+function renderList() {
+  const prefix = curYear + '-' + String(curMonth+1).padStart(2,'0') + '-';
+  document.getElementById('list-title').textContent =
+    'משמרות — ' + HEB_MONTHS[curMonth] + ' ' + curYear;
+
+  const entries = [];
+  Object.keys(shifts).filter(k => k.startsWith(prefix)).sort().forEach(key => {
+    shifts[key].forEach((t, i) => entries.push({key, t, i}));
+  });
+
+  const container = document.getElementById('shifts-list');
+  container.innerHTML = '';
+
+  if (!entries.length) {
+    container.innerHTML = `<div class="empty-state"><div class="es-icon">📭</div>אין משמרות בחודש זה</div>`;
+    return;
+  }
+
+  entries.forEach(({key, t, i}) => {
+    const [y, m, d] = key.split('-').map(Number);
+    const card = document.createElement('div');
+    card.className = 'shift-card ' + t;
+
+    let timeStr;
+    if (t === 'moon') {
+      const prev = new Date(y, m-1, d-1);
+      timeStr = prev.getDate() + '/' + (prev.getMonth()+1) + ' 23:00 → ' + d + '/' + m + ' 07:00';
+    } else {
+      timeStr = d + '/' + m + ' ' + TIMES[t].s + ':00 → ' + TIMES[t].e + ':00';
+    }
+
+    card.innerHTML = `
+      <div class="shift-card-icon">${SVG[t](COLORS[t])}</div>
+      <div class="shift-card-info">
+        <div class="shift-card-title">${NAMES[t]}</div>
+        <div class="shift-card-time">${timeStr}</div>
+      </div>
+      <button class="btn-del" onclick="deleteShift('${key}','${t}')">×</button>
+    `;
+    container.appendChild(card);
+  });
+}
+
+function deleteShift(key, type) {
+  if (!shifts[key]) return;
+  const i = shifts[key].indexOf(type);
+  if (i !== -1) shifts[key].splice(i, 1);
+  if (!shifts[key].length) delete shifts[key];
+  saveShifts(); renderCal(); renderList();
+}
+
+// ══════════════════════════════════════════════════════
+// IMPORT FROM PASTE
+// ══════════════════════════════════════════════════════
+function toggleImport() {
+  const body = document.getElementById('import-body');
+  const tog  = document.getElementById('import-toggle');
+  const open = body.classList.toggle('open');
+  tog.classList.toggle('open', open);
+}
+
+function setImportStatus(msg, type) {
+  const el = document.getElementById('import-status');
+  el.textContent = msg;
+  el.className = 'import-status' + (type ? ' ' + type : '');
+}
+
+function importFromPaste() {
+  const raw = document.getElementById('paste-input').value.trim();
+  if (!raw) { setImportStatus('אין קוד להדביק', 'err'); return; }
+  const entries = raw.split(/[,\n]+/).map(s => s.trim()).filter(Boolean);
+  let imported = 0, skipped = 0, errors = 0, firstDate = null;
+  entries.forEach(e => {
+    const m = e.match(/^(\d{4}-\d{2}-\d{2}):(sun|star|moon)$/i);
+    if (!m) { errors++; return; }
+    const key = m[1], type = m[2].toLowerCase();
+    if (!firstDate) firstDate = key;
+    if (!shifts[key]) shifts[key] = [];
+    if (!shifts[key].includes(type)) { shifts[key].push(type); imported++; }
+    else skipped++;
+  });
+  if (errors === entries.length) { setImportStatus('פורמט שגוי', 'err'); return; }
+  saveShifts();
+  if (firstDate) { const [y,m] = firstDate.split('-'); curYear = +y; curMonth = +m - 1; }
+  renderCal(); renderList();
+  setImportStatus('יובאו ' + imported + ' משמרות' + (skipped ? ', ' + skipped + ' קיימות' : '') + ' ✓', 'ok');
+  toast('יובאו ' + imported + ' משמרות ✓');
+}
+
+// ══════════════════════════════════════════════════════
+// ICAL EXPORT
+// ══════════════════════════════════════════════════════
+function pad2(n) { return String(n).padStart(2,'0'); }
+function icalDate(y,m,d,h,min) { return y+pad2(m)+pad2(d)+'T'+pad2(h)+pad2(min)+'00'; }
+
+function exportIcal() {
+  const prefix = curYear + '-' + String(curMonth+1).padStart(2,'0') + '-';
+  const keys = Object.keys(shifts).filter(k => k.startsWith(prefix)).sort();
+  if (!keys.length) { toast('אין משמרות לחודש זה'); return; }
+  let ics = 'BEGIN:VCALENDAR\r\nVERSION:2.0\r\nPRODID:-//MDA//HE\r\nCALSCALE:GREGORIAN\r\n';
+  keys.forEach(key => {
+    const [ky,km,kd] = key.split('-').map(Number);
+    shifts[key].forEach(t => {
+      let ds, de;
+      if (t === 'moon') {
+        const p = new Date(ky, km-1, kd-1);
+        ds = icalDate(p.getFullYear(), p.getMonth()+1, p.getDate(), 23, 0);
+        de = icalDate(ky, km, kd, 7, 0);
+      } else {
+        ds = icalDate(ky, km, kd, TIMES[t].s, 0);
+        de = icalDate(ky, km, kd, TIMES[t].e, 0);
+      }
+      ics += `BEGIN:VEVENT\r\nUID:mda-${key}-${t}-${Date.now()}@mda\r\nDTSTART:${ds}\r\nDTEND:${de}\r\nSUMMARY:משמרת ${NAMES[t]} MDA\r\nEND:VEVENT\r\n`;
+    });
+  });
+  ics += 'END:VCALENDAR';
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(new Blob([ics], {type:'text/calendar;charset=utf-8'}));
+  a.download = 'mishmarot-' + HEB_MONTHS[curMonth] + '-' + curYear + '.ics';
+  a.click(); toast('הקובץ יורד 📥');
+}
+
+// ══════════════════════════════════════════════════════
+// GOOGLE CALENDAR SYNC
+// ══════════════════════════════════════════════════════
+function saveGcalUrl() {
+  const val = document.getElementById('gcal-url').value.trim();
+  if (!val) { setSettingsStatus('gcal', 'יש להזין URL', 'err'); return; }
+  scriptUrl = val;
+  localStorage.setItem('mda_script_url', val);
+  document.getElementById('gcal-url').classList.add('saved');
+  setSettingsStatus('gcal', 'נשמר — בודק חיבור...', 'ok');
+  callScript({action:'test'}).then(d => {
+    setSettingsStatus('gcal', d?.ok ? '✓ חיבור תקין' : '✗ חיבור נכשל', d?.ok ? 'ok' : 'err');
+  });
+}
+
+function setSettingsStatus(id, msg, type) {
+  const el = document.getElementById('status-' + id);
+  if (!el) return;
+  el.textContent = msg; el.className = 'settings-status' + (type ? ' ' + type : '');
+}
+
+async function callScript(body) {
+  if (!scriptUrl) return null;
+  try {
+    const res = await fetch(scriptUrl, { method:'POST', body: JSON.stringify(body), headers:{'Content-Type':'text/plain'} });
+    return await res.json();
+  } catch(e) { return {ok:false, message:e.message}; }
+}
+
+function buildShiftObjects(keys) {
+  const out = [];
+  keys.forEach(key => {
+    if (!shifts[key]) return;
+    const [ky,km,kd] = key.split('-').map(Number);
+    shifts[key].forEach((t, i) => {
+      let start, end;
+      if (t === 'moon') {
+        const p = new Date(ky, km-1, kd-1);
+        start = new Date(p.getFullYear(), p.getMonth(), p.getDate(), 23, 0);
+        end   = new Date(ky, km-1, kd, 7, 0);
+      } else {
+        start = new Date(ky, km-1, kd, TIMES[t].s, 0);
+        end   = new Date(ky, km-1, kd, TIMES[t].e, 0);
+      }
+      out.push({ shiftId: key+'_'+t+'_'+i, title:'משמרת '+NAMES[t]+' MDA', start:start.toISOString(), end:end.toISOString() });
+    });
+  });
+  return out;
+}
+
+async function syncMonth() {
+  if (!scriptUrl) { toast('הגדר Apps Script URL בהגדרות'); return; }
+  const prefix = curYear + '-' + String(curMonth+1).padStart(2,'0') + '-';
+  const keys = Object.keys(shifts).filter(k => k.startsWith(prefix));
+  if (!keys.length) { toast('אין משמרות לחודש זה'); return; }
+  const btn = document.getElementById('btn-sync-month');
+  btn.innerHTML = '<span class="spinner"></span>'; btn.disabled = true;
+  const d = await callScript({action:'sync', shifts: buildShiftObjects(keys)});
+  btn.innerHTML = '🔄 סנכרן גוגל'; btn.disabled = false;
+  toast(d?.ok ? '✓ ' + d.message : '✗ ' + (d?.message || 'שגיאה'));
+}
+
+async function syncAll() {
+  if (!scriptUrl) { setSettingsStatus('gcal','הגדר URL תחילה','err'); return; }
+  const btn = document.getElementById('btn-sync-all');
+  btn.innerHTML = '<span class="spinner"></span>'; btn.disabled = true;
+  const d = await callScript({action:'sync', shifts: buildShiftObjects(Object.keys(shifts))});
+  btn.innerHTML = '🔄 סנכרן הכל'; btn.disabled = false;
+  setSettingsStatus('gcal', d?.ok ? '✓ ' + d.message : '✗ ' + (d?.message||'שגיאה'), d?.ok ? 'ok' : 'err');
+}
+
+async function clearMonthGcal() {
+  if (!confirm('למחוק משמרות ' + HEB_MONTHS[curMonth] + ' מגוגל קלנדר?')) return;
+  const d = await callScript({action:'clearMonth', year:curYear, month:curMonth+1});
+  setSettingsStatus('gcal', d?.ok ? '✓ ' + d.message : '✗ '+(d?.message||'שגיאה'), d?.ok?'ok':'err');
+}
+
+// ══════════════════════════════════════════════════════
+// SETTINGS — AI
+// ══════════════════════════════════════════════════════
+function selectAiProvider(p) {
+  aiProvider = p;
+  localStorage.setItem('mda_ai_provider', p);
+  ['gemini','anthropic'].forEach(id => {
+    document.getElementById('tab-' + id).className = 'btn-tab' + (id === p ? ' active' : '');
+    document.getElementById('ai-key-section-' + id).style.display = id === p ? 'block' : 'none';
+  });
+}
+
+function saveAiKey(provider) {
+  const inp = document.getElementById('key-' + provider);
+  const val = inp.value.trim();
+  if (!val) { setSettingsStatus(provider, 'יש להזין מפתח', 'err'); return; }
+  if (provider === 'anthropic' && !val.startsWith('sk-ant-')) {
+    setSettingsStatus(provider, 'חייב להתחיל ב-sk-ant-', 'err'); return;
+  }
+  if (provider === 'gemini' && !val.startsWith('AIza')) {
+    setSettingsStatus(provider, 'חייב להתחיל ב-AIza', 'err'); return;
+  }
+  localStorage.setItem('mda_key_' + provider, val);
+  inp.classList.add('saved');
+  setSettingsStatus(provider, 'נשמר ✓', 'ok');
+  setTimeout(() => setSettingsStatus(provider, '', ''), 3000);
+}
+
+// ══════════════════════════════════════════════════════
+// BACKUP
+// ══════════════════════════════════════════════════════
+function exportBackup() {
+  const blob = new Blob([JSON.stringify({shifts, rates, exported: new Date().toISOString()}, null, 2)], {type:'application/json'});
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = 'mda-backup-' + new Date().toISOString().slice(0,10) + '.json';
+  a.click(); toast('גיבוי יורד ✓');
+}
+
+function importBackup(e) {
+  const file = e.target.files[0]; if (!file) return;
+  const reader = new FileReader();
+  reader.onload = ev => {
+    try {
+      const data = JSON.parse(ev.target.result);
+      if (data.shifts) { shifts = data.shifts; saveShifts(); }
+      if (data.rates)  { rates  = data.rates;  localStorage.setItem('mda_rates', JSON.stringify(rates)); }
+      renderCal(); toast('גיבוי יובא ✓');
+    } catch { toast('קובץ שגוי'); }
+  };
+  reader.readAsText(file);
+}
+
+function fullReset() {
+  if (!confirm('⚠️ למחוק את כל המשמרות ולאפס הגדרות?')) return;
+  if (!confirm('אישור אחרון — פעולה בלתי הפיכה!')) return;
+  ['mda_shifts','mda_rates','mda_script_url'].forEach(k => localStorage.removeItem(k));
+  shifts = {}; rates = {base:35,sun:100,star:100,moon:150};
+  document.getElementById('rate-base').value = 35;
+  document.getElementById('rate-sun').value  = 100;
+  document.getElementById('rate-star').value = 100;
+  document.getElementById('rate-moon').value = 150;
+  renderCal(); toast('איפוס בוצע ✓');
+}
+
+// ══════════════════════════════════════════════════════
+// TOAST
+// ══════════════════════════════════════════════════════
+function toast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg; t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 2500);
+}
+
+// ══════════════════════════════════════════════════════
+// INIT
+// ══════════════════════════════════════════════════════
+load();
+renderCal();
+</script>
+
+<script>
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.register('sw.js').catch(() => {});
+}
+</script>
+</body>
+</html>
